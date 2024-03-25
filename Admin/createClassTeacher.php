@@ -16,25 +16,24 @@ if (isset($_POST['save'])) {
   $classArmId = $_POST['classArmId'];
   $dateCreated = date("Y-m-d");
 
+  // Retrieve password from form data
+  $password = $_POST['password'];
+
+  // Hash the password
+  $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
   $query = mysqli_query($conn, "select * from tblclassteacher where emailAddress ='$emailAddress'");
   $ret = mysqli_fetch_array($query);
 
-  $sampPass = "pass123";
-  $sampPass_2 = md5($sampPass);
-
   if ($ret > 0) {
-
     $statusMsg = "<div class='alert alert-danger' style='margin-right:700px;'>This Email Address Already Exists!</div>";
   } else {
-
     $query = mysqli_query($conn, "INSERT into tblclassteacher(firstName,lastName,emailAddress,password,phoneNo,classId,classArmId,dateCreated) 
-    value('$firstName','$lastName','$emailAddress','$sampPass_2','$phoneNo','$classId','$classArmId','$dateCreated')");
+    value('$firstName','$lastName','$emailAddress','$hashedPassword','$phoneNo','$classId','$classArmId','$dateCreated')");
 
     if ($query) {
-
       $qu = mysqli_query($conn, "update tblclassarms set isAssigned='1' where Id ='$classArmId'");
       if ($qu) {
-
         $statusMsg = "<div class='alert alert-success'  style='margin-right:700px;'>Created Successfully!</div>";
       } else {
         $statusMsg = "<div class='alert alert-danger' style='margin-right:700px;'>An error Occurred!</div>";
@@ -46,11 +45,6 @@ if (isset($_POST['save'])) {
 }
 
 //---------------------------------------EDIT-------------------------------------------------------------
-
-
-
-
-
 
 //--------------------EDIT------------------------------------------------------------
 
@@ -73,8 +67,14 @@ if (isset($_GET['Id']) && isset($_GET['action']) && $_GET['action'] == "edit") {
     $classArmId = $_POST['classArmId'];
     $dateCreated = date("Y-m-d");
 
+    // Retrieve password from form data
+    $password = $_POST['password'];
+
+    // Hash the password
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
     $query = mysqli_query($conn, "update tblclassteacher set firstName='$firstName', lastName='$lastName',
-    emailAddress='$emailAddress', password='$password',phoneNo='$phoneNo', classId='$classId',classArmId='$classArmId'
+    emailAddress='$emailAddress', password='$hashedPassword',phoneNo='$phoneNo', classId='$classId',classArmId='$classArmId'
     where Id='$Id'");
     if ($query) {
 
@@ -111,12 +111,10 @@ if (isset($_GET['Id']) && isset($_GET['classArmId']) && isset($_GET['action']) &
 
     $statusMsg = "<div class='alert alert-danger' style='margin-right:700px;'>An error Occurred!</div>";
   }
-
 }
 
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -189,7 +187,7 @@ if (isset($_GET['Id']) && isset($_GET['classArmId']) && isset($_GET['action']) &
                   <?php echo $statusMsg; ?>
                 </div>
                 <div class="card-body">
-                  <form method="post">
+                  <form method="post" autocomplete="off">
                     <div class="form-group row mb-3">
                       <div class="col-xl-6">
                         <label class="form-control-label">Firstname<span class="text-danger ml-2">*</span></label>
@@ -214,6 +212,14 @@ if (isset($_GET['Id']) && isset($_GET['classArmId']) && isset($_GET['action']) &
                           id="exampleInputFirstName">
                       </div>
                     </div>
+                    <div class="form-group row mb-3">
+                      <div class="col-xl-6">
+                        <label class="form-control-label">Password<span class="text-danger ml-2">*</span></label>
+                        <input type="password" class="form-control" required name="password" id="exampleInputPassword"
+                          autocomplete="off">
+                      </div>
+                    </div>
+
                     <div class="form-group row mb-3">
                       <div class="col-xl-6">
                         <label class="form-control-label">Select Class<span class="text-danger ml-2">*</span></label>

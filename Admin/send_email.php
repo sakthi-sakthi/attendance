@@ -74,7 +74,7 @@ if ($result->num_rows > 0) {
             </html>
         ';
 
-        $api_key = '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';
+        $api_key = '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';
         $url = 'https://api.sendinblue.com/v3/smtp/email';
 
         $data = [

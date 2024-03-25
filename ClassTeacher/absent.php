@@ -1,5 +1,6 @@
 <?php
 error_reporting(0);
+$statusMsg = '';
 include '../Includes/dbcon.php';
 include '../Includes/session.php';
 
@@ -103,7 +104,7 @@ if (isset($_POST['send_emails'])) {
     </html>
 ';
 
-            $api_key = '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';
+            $api_key = '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';
             $url = 'https://api.sendinblue.com/v3/smtp/email';
 
             $data = [
@@ -196,12 +197,20 @@ if (isset($_POST['send_emails'])) {
                                                 <label class="form-control-label">Select Date<span
                                                         class="text-danger ml-2">*</span></label>
                                                 <input type="date" class="form-control" name="dateTaken"
-                                                    id="exampleInputFirstName" placeholder="Class Arm Name">
+                                                    id="exampleInputFirstName" placeholder="Class Arm Name" required>
+                                            </div>
+                                            <div class="col-xl-6">
+                                                <label class="form-control-label">Select Session Type<span
+                                                        class="text-danger ml-2">*</span></label>
+                                                <select class="form-control" name="sessionType" required>
+                                                    <option value="Morning">Morning</option>
+                                                    <option value="Afternoon">Afternoon</option>
+                                                </select>
                                             </div>
                                         </div>
-                                        <button type="submit" name="view" class="btn btn-primary">View
-                                            Absent</button>
+                                        <button type="submit" name="view" class="btn btn-primary">View Absent</button>
                                     </form>
+
                                 </div>
                             </div>
 
@@ -231,6 +240,7 @@ if (isset($_POST['send_emails'])) {
                                                         <th>Class</th>
                                                         <th>Class Sections</th>
                                                         <th>Session</th>
+                                                        <th>Absent Time</th>
                                                         <th>Term</th>
                                                         <th>Status</th>
                                                         <th>Date</th>
@@ -243,9 +253,9 @@ if (isset($_POST['send_emails'])) {
 
                                                     if (isset($_POST['view'])) {
                                                         $dateTaken = $_POST['dateTaken'];
-
-                                                        $query = "SELECT tblattendance.Id, tblattendance.status, tblattendance.dateTimeTaken, tblclass.className,
-                                                        tblclassarms.classArmName, tblsessionterm.sessionName, tblterm.termName,
+                                                        $sessionType = $_POST['sessionType']; // Get the selected session type from the form                                                
+                                                        $query = "SELECT tblattendance.Id, tblattendance.status, tblattendance.dateTimeTaken, tblattendance.sessionType,
+                                                        tblclass.className, tblclassarms.classArmName, tblsessionterm.sessionName, tblterm.termName,
                                                         tblstudents.firstName, tblstudents.lastName, tblstudents.otherName, tblstudents.admissionNumber
                                                         FROM tblattendance
                                                         INNER JOIN tblclass ON tblclass.Id = tblattendance.classId
@@ -253,15 +263,13 @@ if (isset($_POST['send_emails'])) {
                                                         INNER JOIN tblsessionterm ON tblsessionterm.Id = tblattendance.sessionTermId
                                                         INNER JOIN tblterm ON tblterm.Id = tblsessionterm.termId
                                                         INNER JOIN tblstudents ON tblstudents.admissionNumber = tblattendance.admissionNo
-                                                        WHERE tblattendance.dateTimeTaken = '$dateTaken' 
+                                                        WHERE DATE(tblattendance.dateTimeTaken) = '$dateTaken' 
                                                         AND tblattendance.classId = '$_SESSION[classId]' 
                                                         AND tblattendance.classArmId = '$_SESSION[classArmId]' 
-                                                        AND tblattendance.status = '0'"; // Filter for absent students
-                                                    
+                                                        AND tblattendance.status = '0'
+                                                        AND tblattendance.sessionType = '$sessionType'";
                                                         $rs = $conn->query($query);
                                                         $num = $rs->num_rows;
-                                                        $sn = 0;
-                                                        $status = "";
 
                                                         if ($num > 0) {
                                                             while ($rows = $rs->fetch_assoc()) {
@@ -276,6 +284,7 @@ if (isset($_POST['send_emails'])) {
                                                                         <td>" . $rows['className'] . "</td>
                                                                         <td>" . $rows['classArmName'] . "</td>
                                                                         <td>" . $rows['sessionName'] . "</td>
+                                                                        <td>" . $rows['sessionType'] . "</td> 
                                                                         <td>" . $rows['termName'] . "</td>
                                                                         <td style='background-color:#FF0000'>Absent</td>
                                                                         <td>" . $rows['dateTimeTaken'] . "</td>
@@ -285,7 +294,6 @@ if (isset($_POST['send_emails'])) {
                                                             echo "<div class='alert alert-danger' role='alert'>No Absent Students Found!</div>";
                                                         }
                                                     }
-
                                                     ?>
                                                 </tbody>
                                             </table>
@@ -295,17 +303,6 @@ if (isset($_POST['send_emails'])) {
                             </div>
                         </div>
                         <!--Row-->
-
-                        <!-- Documentation Link -->
-                        <!-- <div class="row">
-            <div class="col-lg-12 text-center">
-              <p>For more documentations you can visit<a href="https://getbootstrap.com/docs/4.3/components/forms/"
-                  target="_blank">
-                  bootstrap forms documentations.</a> and <a
-                  href="https://getbootstrap.com/docs/4.3/components/input-group/" target="_blank">bootstrap input
-                  groups documentations</a></p>
-            </div>
-          </div> -->
 
                     </div>
                     <!---Container Fluid-->

@@ -3,85 +3,65 @@ error_reporting(0);
 include '../Includes/dbcon.php';
 include '../Includes/session.php';
 
-$query = "SELECT tblclass.className,tblclassarms.classArmName 
-    FROM tblclassteacher
-    INNER JOIN tblclass ON tblclass.Id = tblclassteacher.classId
-    INNER JOIN tblclassarms ON tblclassarms.Id = tblclassteacher.classArmId
-    Where tblclassteacher.Id = '$_SESSION[userId]'";
-$rs = $conn->query($query);
-$num = $rs->num_rows;
-$rrw = $rs->fetch_assoc();
-
-
-//session and Term
-$querey = mysqli_query($conn, "select * from tblsessionterm where isActive ='1'");
-$rwws = mysqli_fetch_array($querey);
-$sessionTermId = $rwws['Id'];
-
-$dateTaken = date("Y-m-d");
-
-$qurty = mysqli_query($conn, "select * from tblattendance  where classId = '$_SESSION[classId]' and classArmId = '$_SESSION[classArmId]' and dateTimeTaken='$dateTaken'");
-$count = mysqli_num_rows($qurty);
-
-if ($count == 0) { //if Record does not exsit, insert the new record
-
-  //insert the students record into the attendance table on page load
-  $qus = mysqli_query($conn, "select * from tblstudents  where classId = '$_SESSION[classId]' and classArmId = '$_SESSION[classArmId]'");
-  while ($ros = $qus->fetch_assoc()) {
-    $qquery = mysqli_query($conn, "insert into tblattendance(admissionNo,classId,classArmId,sessionTermId,status,dateTimeTaken) 
-              value('$ros[admissionNumber]','$_SESSION[classId]','$_SESSION[classArmId]','$sessionTermId','0','$dateTaken')");
-
+// Function to get session based on current time
+function getSession()
+{
+  $hour = date('H');
+  if ($hour < 12) {
+    return 'Morning';
+  } else {
+    return 'Afternoon';
   }
 }
 
+$session = getSession();
 
+// Fetch session term ID
+$query = mysqli_query($conn, "SELECT Id FROM tblsessionterm WHERE isActive = '1'");
+$row = mysqli_fetch_assoc($query);
+$sessionTermId = $row['Id'];
 
+// Fetch current date
+$dateTaken = date("Y-m-d");
 
+// Check if attendance has already been taken for the current session
+$attendanceCheckQuery = mysqli_query($conn, "SELECT * FROM tblattendance WHERE classId = '$_SESSION[classId]' AND classArmId = '$_SESSION[classArmId]' AND dateTimeTaken = '$dateTaken' AND sessionType = '$session'");
+$count = mysqli_num_rows($attendanceCheckQuery);
 
+if ($count == 0) { // If attendance has not been taken for the current session, insert records
+  $studentsQuery = mysqli_query($conn, "SELECT * FROM tblstudents WHERE classId = '$_SESSION[classId]' AND classArmId = '$_SESSION[classArmId]'");
+  while ($student = mysqli_fetch_assoc($studentsQuery)) {
+    $insertQuery = mysqli_query($conn, "INSERT INTO tblattendance (admissionNo, classId, classArmId, sessionTermId, status, dateTimeTaken, sessionType) 
+        VALUES ('$student[admissionNumber]', '$_SESSION[classId]', '$_SESSION[classArmId]', '$sessionTermId', '0', '$dateTaken', '$session')");
+  }
+}
 
 if (isset($_POST['save'])) {
-
   $admissionNo = $_POST['admissionNo'];
-
   $check = $_POST['check'];
   $N = count($admissionNo);
   $status = "";
 
-
-  //check if the attendance has not been taken i.e if no record has a status of 1
-  $qurty = mysqli_query($conn, "select * from tblattendance  where classId = '$_SESSION[classId]' and classArmId = '$_SESSION[classArmId]' and dateTimeTaken='$dateTaken' and status = '1'");
-  $count = mysqli_num_rows($qurty);
+  // Check if attendance has already been taken for the current session
+  $attendanceCheckQuery = mysqli_query($conn, "SELECT * FROM tblattendance WHERE classId = '$_SESSION[classId]' AND classArmId = '$_SESSION[classArmId]' AND dateTimeTaken = '$dateTaken' AND sessionType = '$session' AND status = '1'");
+  $count = mysqli_num_rows($attendanceCheckQuery);
 
   if ($count > 0) {
-
-    $statusMsg = "<div class='alert alert-danger' style='margin-right:700px;'>Attendance has been taken for today!</div>";
-
-  } else //update the status to 1 for the checkboxes checked
-  {
-
+    $statusMsg = "<div class='alert alert-danger' style='margin-right:700px;'>Attendance has been taken for today's $session session!</div>";
+  } else {
     for ($i = 0; $i < $N; $i++) {
-      $admissionNo[$i]; //admission Number
-
-      if (isset($check[$i])) //the checked checkboxes
-      {
-        $qquery = mysqli_query($conn, "update tblattendance set status='1' where admissionNo = '$check[$i]'");
-
-        if ($qquery) {
-
-          $statusMsg = "<div class='alert alert-success'  style='margin-right:700px;'>Attendance Taken Successfully!</div>";
+      $admissionNumber = $admissionNo[$i];
+      if (isset($check[$i])) {
+        $updateQuery = mysqli_query($conn, "UPDATE tblattendance SET status = '1' WHERE admissionNo = '$check[$i]' AND dateTimeTaken = '$dateTaken' AND sessionType = '$session'");
+        if ($updateQuery) {
+          $statusMsg = "<div class='alert alert-success' style='margin-right:700px;'>Attendance taken successfully for today's $session session!</div>";
         } else {
-          $statusMsg = "<div class='alert alert-danger' style='margin-right:700px;'>An error Occurred!</div>";
+          $statusMsg = "<div class='alert alert-danger' style='margin-right:700px;'>An error occurred while updating attendance!</div>";
         }
-
       }
     }
   }
-
-
-
 }
-
-
 ?>
 
 <!DOCTYPE html>
@@ -230,18 +210,6 @@ if (isset($_POST['save'])) {
       </div>
     </div>
     <!--Row-->
-
-    <!-- Documentation Link -->
-    <!-- <div class="row">
-            <div class="col-lg-12 text-center">
-              <p>For more documentations you can visit<a href="https://getbootstrap.com/docs/4.3/components/forms/"
-                  target="_blank">
-                  bootstrap forms documentations.</a> and <a
-                  href="https://getbootstrap.com/docs/4.3/components/input-group/" target="_blank">bootstrap input
-                  groups documentations</a></p>
-            </div>
-          </div> -->
-
   </div>
   <!---Container Fluid-->
   </div>
